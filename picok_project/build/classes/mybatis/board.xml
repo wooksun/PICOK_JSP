@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="vo.BoardVO">
+
+	<!-- 메인글 1건을 저장한다. -->
+	<!-- uploadOK.jsp에 insert(vo)를 사용한다면, 사용 -->
+	<insert id="insert" parameterType="vo">
+		insert into board (board_idx,
+		name, password, subject, content, notice, ip)
+		values
+		(board_idx_seq.nextval, #{name}, #{password}, #{subject},
+		#{content},
+		#{notice}, #{ip})
+	</insert>
+
+	<!-- 메인글 전체 개수를 얻어온다. -->
+	<select id="selectCount" resultType="int">
+		select count(*) from board
+		where category = #{category}
+	</select>
+
+	<!-- 1페이지 분량의 메인글을 얻어온다. -->
+	<select id="selectList" parameterType="java.util.HashMap"
+		resultType="vo">
+      <![CDATA[
+      select * from (
+         select rownum rnum, TT.* from (
+        	 select * from board where category = #{category} order by board_idx desc
+         )TT where rownum <= #{endNo}
+      )where rnum >= #{startNo}
+      ]]>
+	</select>
+
+	<!-- 1페이지 분량의 메인글을 얻어온다.(popular정렬) -->
+	<select id="selectListbyPopular"
+		parameterType="java.util.HashMap" resultType="vo">
+      <![CDATA[
+		SELECT *
+		FROM (
+		    SELECT ROWNUM AS rnum, subq.*
+		    FROM (
+		        SELECT b.*, COUNT(l.board_idx) AS like_count
+		        FROM board b
+		        LEFT JOIN likes l ON b.board_idx = l.board_idx
+		        WHERE b.category = #{category}
+		        GROUP BY b.board_idx,b.id,b.category,b.board_title,b.board_content,b.file_name,b.board_reg_date,b.view_num,b.likes_num,b.report_num,b.deleteOK,b.secretOK
+		        ORDER BY like_count DESC, b.board_idx DESC
+		    ) subq
+		    WHERE ROWNUM <= #{endNo}
+		)
+		WHERE rnum >= #{startNo}
+      ]]>
+	</select>
+
+	<!-- 조회수를 증가시킨다. -->
+	<update id="increment" parameterType="int">
+		update board set hit = hit
+		+ 1 where board_idx = #{board_idx}
+	</update>
+	<!-- 메인글 1건을 얻어온다. -->
+	<select id="selectByIdx" parameterType="int" resultType="vo">select *
+		from board where board_idx = #{board_idx}
+	</select>
+	<!-- 메인글 1건을 삭제한다. -->
+	<delete id="delete" parameterType="int">delete from board where
+		board_idx = #{board_idx}
+	</delete>
+	<!-- 메인글 1건을 수정한다. -->
+	<update id="update" parameterType="vo">
+		update board set subject =
+		#{subject}, content = #{content}, notice =
+		#{notice} where board_idx =
+		#{board_idx}
+	</update>
+	<!-- 모든 공지글을 얻어온다. -->
+	<select id="selectNotice" resultType="vo">
+		select * from board where
+		notice = 'on' order by board_idx desc
+	</select>
+</mapper>
+
+
